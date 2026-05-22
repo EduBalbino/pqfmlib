@@ -81,9 +81,22 @@ available in `examples/`.
 
 ### CD-Ising PQFM
 
-`CDIsingProjectiveQFM` is a counterdiabatic-inspired Ising-glass feature map.
-For each block of features, PQFMLib builds data-dependent local fields $h_i$
-and couplings $J_{ij}$ from the input values and the mutual-information matrix.
+`CDIsingProjectiveQFM` is a counterdiabatic-inspired Ising-glass feature map. In the present implementation, 
+it is extended to support multi-feature encoding per qubit by increasing the circuit depth. 
+Each circuit block, or layer, encodes one feature per qubit, allowing multiple features 
+to be assigned sequentially to the same qubit across different layers.
+
+For each feature block, PQFMLib constructs data-dependent local fields $h_i$ 
+and couplings $J_{ij}$ from the input values and the mutual-information matrix. 
+The local fields are interpreted as normalized feature values:
+
+```math
+h_i = \bar{x}_{f(i)},
+\qquad
+\bar{x}_f = \frac{x_f - \mu_f}{w_f},
+```
+
+where $\mu_f$ is the feature mean and $w_f$ is the feature standard deviation.
 
 A useful way to view the underlying Ising problem Hamiltonian is:
 
@@ -93,30 +106,70 @@ H_{\mathrm{Ising}}(x)
 + \sum_{(i,j)} J_{ij} Z_i Z_j .
 ```
 
-The implemented circuit applies a first-order counterdiabatic correction with
-generators:
+The implemented circuit applies a first-order counterdiabatic term:
 
 ```math
-H_{\mathrm{CD}}^{(1)}(x)
-= \sum_i h_i(x) Y_i
-+ \sum_{(i,j)} J_{ij} \left( Y_i Z_j + Z_i Y_j \right) .
+H_{\mathrm{CD}}(x,t)
+= -2\dot{\lambda}(t)\alpha_1(t)
+\left(
+\sum_i h_i(x)Y_i
++ \sum_{i<j} J_{ij}\left(Y_i Z_j + Z_i Y_j\right)
+\right) .
 ```
 
-The coefficient is computed from the schedule functions $s(t)$, $\dot{s}(t)$,
-and the first-order CD factor $\alpha_1$. This map is useful as a physically
-motivated Ising baseline: it encodes features locally and uses feature-feature
-relations to activate two-qubit CD terms on available edges.
+The first-order CD coefficient is:
+
+```math
+\alpha_1(t)
+= -\frac{1}{4}
+\frac{
+\sum_i h_i^2 + \sum_{i<j} J_{ij}^2
+}{
+R(t)
+}.
+```
+
+with:
+
+```math
+\begin{aligned}
+R(t)
+&= \left(1-\lambda(t)\right)^2
+\left(
+\sum_i h_i^2
++ 4\sum_{i\neq j} J_{ij}^2
+\right) \\
+&\quad + \lambda(t)^2
+\left(
+\sum_i h_i^4
++ \sum_{i\neq j} J_{ij}^4
++ 6\sum_{i\neq j} h_i^2 J_{ij}^2
++ 6\sum_{i<j<k}
+\left(
+J_{ij}^2J_{ik}^2
++ J_{ij}^2J_{jk}^2
++ J_{ik}^2J_{jk}^2
+\right)
+\right) .
+\end{aligned}
+```
+
+In the implementation, the schedule is represented by $s(t)$ and
+$\dot{s}(t)$, which play the role of $\lambda(t)$ and $\dot{\lambda}(t)$.
+This map is useful as a physically motivated Ising baseline: it encodes
+features locally and uses feature-feature relations to activate two-qubit CD
+terms on available edges.
 
 ### Heisenberg PQFM
 
 `HeisenbergProjectiveQFM` follows the original notebook-style Heisenberg map.
 It prepares one random single-qubit unitary per qubit and then applies repeated
-even/odd nearest-neighbor chain layers. Each scalar feature drives an isotropic
-two-qubit interaction:
+even/odd nearest-neighbor chain layers. Each normalized scalar feature drives an
+isotropic two-qubit interaction:
 
 ```math
 H_{\mathrm{Heisenberg}}(x)
-= \sum_{(i,i+1)} \theta_e(x)
+= \sum_{(i,i+1)} J_i
 \left(
 X_i X_{i+1}
 + Y_i Y_{i+1}
@@ -124,74 +177,90 @@ X_i X_{i+1}
 \right) .
 ```
 
-Feature angles can be scaled as:
+Here $J_i$ denotes the feature angle assigned to the chain edge $(i,i+1)$:
 
 ```math
-\theta(x) = 2\pi \tanh\left(\frac{x}{3}\right) .
+J_i = 2\pi \tanh\left(\frac{\bar{x}_{f(i)}}{3}\right),
+\qquad
+\bar{x}_{f(i)} = \frac{x_{f(i)} - \mu_{f(i)}}{w_{f(i)}} .
 ```
+
+In other words, $\bar{x}$ is the normalized feature, $\mu$ is the mean, and
+$w$ is the standard deviation. This is the same normalized-feature convention
+used by the local fields $h_i$ in CD-Ising and XYZ.
 
 The default observables are one-local $Z$, $X$, and $Y$ for every qubit, with an
 option to include two-local diagonal observables $ZZ$, $XX$, and $YY$.
 
-### XYZ PQFM: Three Isings In One Hamiltonian
+### XYZ PQFM
 
 `XYZProjectiveQFM` is the main map in PQFMLib. It generalizes the Ising idea
 from one Pauli axis to several Pauli axes and can also include cross-axis
-interactions. In its diagonal form, it is equivalent to placing up to three
-Ising-like Hamiltonians in the same circuit:
-
-```math
-H_{\mathrm{diag}}(x)
-= H_X(x) + H_Y(x) + H_Z(x) .
-```
+interactions. A compact way to write the full Hamiltonian is:
 
 ```math
 \begin{aligned}
-H_X(x)
-&= \sum_i x_{f_X(i)} X_i
-+ \sum_{(i,j)} J_{f_X(i), f_X(j)} X_i X_j, \\
-H_Y(x)
-&= \sum_i x_{f_Y(i)} Y_i
-+ \sum_{(i,j)} J_{f_Y(i), f_Y(j)} Y_i Y_j, \\
-H_Z(x)
-&= \sum_i x_{f_Z(i)} Z_i
-+ \sum_{(i,j)} J_{f_Z(i), f_Z(j)} Z_i Z_j .
-\end{aligned}
-```
-
-With `axes=("x", "y", "z")` and `keep_diagonal_terms=True`, the map can use
-$XX$, $YY$, and $ZZ$ terms together. This gives three axis-specific Ising
-channels inside one feature map.
-
-When `keep_cross_terms=True`, the map also enables interactions between
-different axes:
-
-```math
-\begin{aligned}
-H_{\mathrm{cross}}(x)
-= \sum_{(i,j)} \Big[
-&J_{f_X(i), f_Y(j)} X_i Y_j
-+ J_{f_X(i), f_Z(j)} X_i Z_j \\
-&+ J_{f_Y(i), f_X(j)} Y_i X_j
-+ J_{f_Y(i), f_Z(j)} Y_i Z_j \\
-&+ J_{f_Z(i), f_X(j)} Z_i X_j
-+ J_{f_Z(i), f_Y(j)} Z_i Y_j
+H_f
+= \sum_i
+\left(
+h_i^{(x)} X_i
++ h_i^{(y)} Y_i
++ h_i^{(z)} Z_i
+\right)
++ \sum_{i<j}
+\Big[
+&J_{ij}^{(xx)} X_i X_j
++ J_{ij}^{(yy)} Y_i Y_j
++ J_{ij}^{(zz)} Z_i Z_j \\
+&+ J_{ij}^{(xy)}\left(X_iY_j + Y_iX_j\right) \\
+&+ J_{ij}^{(xz)}\left(X_iZ_j + Z_iX_j\right) \\
+&+ J_{ij}^{(yz)}\left(Y_iZ_j + Z_iY_j\right)
 \Big] .
 \end{aligned}
 ```
 
-The full XYZ Hamiltonian used by the circuit is:
+The local fields $h_i^{(x)}$, $h_i^{(y)}$, and $h_i^{(z)}$ are normalized
+axis-encoded features:
 
 ```math
-H_{\mathrm{XYZ}}(x)
-= \sum_a \sum_i x_{f_a(i)} \sigma_i^a
-+ \sum_{(i,j)} \sum_{(a,b)}
-J_{f_a(i), f_b(j)} \sigma_i^a \sigma_j^b .
+h_i^{(a)} = \bar{x}_{f_a(i)},
+\qquad
+\bar{x}_{f_a(i)}
+= \frac{x_{f_a(i)} - \mu_{f_a(i)}}{w_{f_a(i)}} ,
+\qquad
+a \in \{x,y,z\}.
 ```
 
-where $a,b$ are selected Pauli axes from $x$, $y$, and $z$. The pair set
-contains diagonal pairs such as $XX$, $YY$, $ZZ$, cross pairs such as $XY$,
-$XZ$, $YZ$, or both, depending on the chosen flags.
+The pairwise couplings between qubits $i$ and $j$ form a full axis-correlation
+matrix:
+
+```math
+J_{ij}
+=
+\begin{pmatrix}
+J_{ij}^{(xx)} & J_{ij}^{(xy)} & J_{ij}^{(xz)} \\
+J_{ij}^{(yx)} & J_{ij}^{(yy)} & J_{ij}^{(yz)} \\
+J_{ij}^{(zx)} & J_{ij}^{(zy)} & J_{ij}^{(zz)}
+\end{pmatrix}.
+```
+
+With `keep_diagonal_terms=True`, the map includes the three Ising-like channels
+$XX$, $YY$, and $ZZ$. With `keep_cross_terms=True`, it also includes cross-axis
+correlations such as $XY$, $XZ$, and $YZ$. In feature-map terms, each qubit has
+a local feature vector:
+
+```math
+\mathbf{x}_i
+=
+\left(
+x_i^{(x)},
+x_i^{(y)},
+x_i^{(z)}
+\right),
+```
+
+and each pair of qubits can carry a full correlation matrix between their
+axis-encoded features.
 
 ## Axis Encoding Modes
 
@@ -228,6 +297,17 @@ For example, $q_{\mathrm{enc}} = 10$ and `axes=("x", "y", "z")` can encode up to
 features per layer. This mode is useful when the goal is to compress many
 features into a small qubit register while preserving axis-specific structure.
 
+You can also choose only two axes. For example:
+
+```python
+encoding_mode="multi_axis"
+features_per_qubit=2
+axes=("x", "y")
+```
+
+In this case, each qubit encodes two different features per layer, one on the
+$X$ axis and one on the $Y$ axis.
+
 ### Shared-Feature Encoding
 
 Use:
@@ -258,6 +338,18 @@ C_{\text{shared-feature}} = q_{\mathrm{enc}} .
 This mode is useful when the experiment should compare or combine projections
 of the same variable through different Pauli axes.
 
+Shared-feature mode can also use two axes:
+
+```python
+encoding_mode="shared_feature"
+features_per_qubit=1
+axes=("x", "y")
+```
+
+Here each qubit still carries one feature, but that same feature is encoded on
+both the $X$ and $Y$ axes. Thus, the feature is shared across two axes instead
+of three.
+
 ## Layer Encoding
 
 PQFMLib can encode more features than fit in one layer. It builds blocks from
@@ -275,8 +367,8 @@ The layer mechanism can be mixed with axis encoding:
 - `multi_axis` + layers: many different features per qubit per layer.
 - `shared_feature` + layers: the same feature is reused across selected axes
   inside each layer, and additional features appear in later layers.
-- diagonal + cross terms + layers: each layer can contain $XX$/$YY$/$ZZ$ Ising
-  channels and cross-axis couplings.
+- diagonal + cross terms + layers: each layer can contain the $XX$, $YY$, and
+  $ZZ$ Ising channels plus cross-axis couplings.
 
 The physical repetition parameter $m$ controls how many Trotter steps are used
 per block. Internally, PQFMLib builds a total circuit depth proportional to:
