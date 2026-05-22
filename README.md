@@ -87,20 +87,20 @@ and couplings $J_{ij}$ from the input values and the mutual-information matrix.
 
 A useful way to view the underlying Ising problem Hamiltonian is:
 
-$$
+```math
 H_{\mathrm{Ising}}(x)
 = \sum_i h_i(x) Z_i
 + \sum_{(i,j)} J_{ij} Z_i Z_j .
-$$
+```
 
 The implemented circuit applies a first-order counterdiabatic correction with
 generators:
 
-$$
+```math
 H_{\mathrm{CD}}^{(1)}(x)
 = \sum_i h_i(x) Y_i
 + \sum_{(i,j)} J_{ij} \left( Y_i Z_j + Z_i Y_j \right) .
-$$
+```
 
 The coefficient is computed from the schedule functions $s(t)$, $\dot{s}(t)$,
 and the first-order CD factor $\alpha_1$. This map is useful as a physically
@@ -114,7 +114,7 @@ It prepares one random single-qubit unitary per qubit and then applies repeated
 even/odd nearest-neighbor chain layers. Each scalar feature drives an isotropic
 two-qubit interaction:
 
-$$
+```math
 H_{\mathrm{Heisenberg}}(x)
 = \sum_{(i,i+1)} \theta_e(x)
 \left(
@@ -122,13 +122,13 @@ X_i X_{i+1}
 + Y_i Y_{i+1}
 + Z_i Z_{i+1}
 \right) .
-$$
+```
 
 Feature angles can be scaled as:
 
-$$
+```math
 \theta(x) = 2\pi \tanh\left(\frac{x}{3}\right) .
-$$
+```
 
 The default observables are one-local $Z$, $X$, and $Y$ for every qubit, with an
 option to include two-local diagonal observables $ZZ$, $XX$, and $YY$.
@@ -140,12 +140,12 @@ from one Pauli axis to several Pauli axes and can also include cross-axis
 interactions. In its diagonal form, it is equivalent to placing up to three
 Ising-like Hamiltonians in the same circuit:
 
-$$
+```math
 H_{\mathrm{diag}}(x)
 = H_X(x) + H_Y(x) + H_Z(x) .
-$$
+```
 
-$$
+```math
 \begin{aligned}
 H_X(x)
 &= \sum_i x_{f_X(i)} X_i
@@ -157,7 +157,7 @@ H_Z(x)
 &= \sum_i x_{f_Z(i)} Z_i
 + \sum_{(i,j)} J_{f_Z(i), f_Z(j)} Z_i Z_j .
 \end{aligned}
-$$
+```
 
 With `axes=("x", "y", "z")` and `keep_diagonal_terms=True`, the map can use
 $XX$, $YY$, and $ZZ$ terms together. This gives three axis-specific Ising
@@ -166,7 +166,7 @@ channels inside one feature map.
 When `keep_cross_terms=True`, the map also enables interactions between
 different axes:
 
-$$
+```math
 \begin{aligned}
 H_{\mathrm{cross}}(x)
 = \sum_{(i,j)} \Big[
@@ -178,16 +178,16 @@ H_{\mathrm{cross}}(x)
 + J_{f_Z(i), f_Y(j)} Z_i Y_j
 \Big] .
 \end{aligned}
-$$
+```
 
 The full XYZ Hamiltonian used by the circuit is:
 
-$$
+```math
 H_{\mathrm{XYZ}}(x)
 = \sum_a \sum_i x_{f_a(i)} \sigma_i^a
 + \sum_{(i,j)} \sum_{(a,b)}
 J_{f_a(i), f_b(j)} \sigma_i^a \sigma_j^b .
-$$
+```
 
 where $a,b$ are selected Pauli axes from $x$, $y$, and $z$. The pair set
 contains diagonal pairs such as $XX$, $YY$, $ZZ$, cross pairs such as $XY$,
@@ -210,19 +210,19 @@ axes=("x", "y", "z")
 In multi-axis mode, each `(qubit, axis)` slot can receive a different tabular
 feature:
 
-$$
+```math
 \begin{aligned}
 \text{qubit } i,\ X\text{ axis} &\mapsto f_X(i), \\
 \text{qubit } i,\ Y\text{ axis} &\mapsto f_Y(i), \\
 \text{qubit } i,\ Z\text{ axis} &\mapsto f_Z(i).
 \end{aligned}
-$$
+```
 
 This means the capacity per layer is:
 
-$$
+```math
 C_{\text{multi-axis}} = q_{\mathrm{enc}} \, |\mathrm{axes}| .
-$$
+```
 
 For example, $q_{\mathrm{enc}} = 10$ and `axes=("x", "y", "z")` can encode up to 30
 features per layer. This mode is useful when the goal is to compress many
@@ -241,19 +241,19 @@ axes=("x", "y", "z")
 In shared-feature mode, each qubit receives one feature and reuses that same
 feature across all selected axes:
 
-$$
+```math
 \begin{aligned}
 \text{qubit } i,\ X\text{ axis} &\mapsto f(i), \\
 \text{qubit } i,\ Y\text{ axis} &\mapsto f(i), \\
 \text{qubit } i,\ Z\text{ axis} &\mapsto f(i).
 \end{aligned}
-$$
+```
 
 The capacity per layer is:
 
-$$
+```math
 C_{\text{shared-feature}} = q_{\mathrm{enc}} .
-$$
+```
 
 This mode is useful when the experiment should compare or combine projections
 of the same variable through different Pauli axes.
@@ -265,10 +265,10 @@ the mutual-information matrix and stacks them as Hamiltonian layers. If a
 dataset has $n_{\mathrm{features}}$ and one layer has capacity $C$, the number of blocks is
 approximately:
 
-$$
+```math
 n_{\mathrm{blocks}}
 = \left\lceil \frac{n_{\mathrm{features}}}{C} \right\rceil .
-$$
+```
 
 The layer mechanism can be mixed with axis encoding:
 
@@ -281,9 +281,9 @@ The layer mechanism can be mixed with axis encoding:
 The physical repetition parameter $m$ controls how many Trotter steps are used
 per block. Internally, PQFMLib builds a total circuit depth proportional to:
 
-$$
+```math
 m_{\mathrm{total}} = m \, n_{\mathrm{blocks}} .
-$$
+```
 
 ## Important XYZ Options
 
