@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environments and local configuration
+.venv/
+venv/
+env/
+.env
+.env.*
+config.py
+*.token
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# Local datasets and notebooks
+data/
+dataset_exploration.ipynb
+
+# Experiment outputs and generated quantum artifacts
+results/
+old_general_results/
+quantum_features*/
+heisenberg__*/
+job_meta.json
+blocks.json
+phys_nodes.json
+resource_estimation.csv
+*.npy
+*.qpy
+*_circuit_logical.*
+*_circuit_transpiled.*
+
+# Local research/benchmark scripts kept outside the package release
+backup/
+run_qfeature_gridsearch_predefinedsplit.py
+run_XYZcross_PCA_classical_quantum_v4.py
+run_XYZcross_SHAP_topN_classical_quantum_v4.py
