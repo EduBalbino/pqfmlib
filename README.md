@@ -109,49 +109,34 @@ H_{\mathrm{Ising}}(x)
 The implemented circuit applies a first-order counterdiabatic term:
 
 ```math
-H_{\mathrm{CD}}(x,t)
-= -2\dot{\lambda}(t)\alpha_1(t)
-\left(
-\sum_i h_i(x)Y_i
-+ \sum_{i<j} J_{ij}\left(Y_i Z_j + Z_i Y_j\right)
-\right) .
+H_{\mathrm{CD}}(x,t) =
+-2 \dot{\lambda}(t) \alpha_1(t)
+[
+\sum_i h_i(x)Y_i +
+\sum_{i \lt j} J_{ij}(Y_i Z_j + Z_i Y_j)
+].
 ```
 
 The first-order CD coefficient is:
 
 ```math
-\alpha_1(t)
-= -\frac{1}{4}
-\frac{
-\sum_i h_i^2 + \sum_{i<j} J_{ij}^2
-}{
-R(t)
-}.
+\alpha_1(t) =
+-\frac{\sum_i h_i^2 + \sum_{i \lt j} J_{ij}^2}{4R(t)}.
 ```
 
 with:
 
 ```math
-\begin{aligned}
-R(t)
-&= \left(1-\lambda(t)\right)^2
-\left(
-\sum_i h_i^2
-+ 4\sum_{i\neq j} J_{ij}^2
-\right) \\
-&\quad + \lambda(t)^2
-\left(
-\sum_i h_i^4
-+ \sum_{i\neq j} J_{ij}^4
-+ 6\sum_{i\neq j} h_i^2 J_{ij}^2
-+ 6\sum_{i<j<k}
-\left(
-J_{ij}^2J_{ik}^2
-+ J_{ij}^2J_{jk}^2
-+ J_{ik}^2J_{jk}^2
-\right)
-\right) .
-\end{aligned}
+R(t) =
+(1-\lambda(t))^2
+(\sum_i h_i^2 + 4\sum_{i\ne j} J_{ij}^2)
++ \lambda(t)^2
+(
+\sum_i h_i^4 +
+\sum_{i\ne j} J_{ij}^4 +
+6\sum_{i\ne j} h_i^2J_{ij}^2 +
+6\sum_{i \lt j \lt k}(J_{ij}^2J_{ik}^2 + J_{ij}^2J_{jk}^2 + J_{ik}^2J_{jk}^2)
+).
 ```
 
 In the implementation, the schedule is represented by $s(t)$ and
@@ -170,17 +155,17 @@ isotropic two-qubit interaction:
 ```math
 H_{\mathrm{Heisenberg}}(x)
 = \sum_{(i,i+1)} J_i
-\left(
+(
 X_i X_{i+1}
 + Y_i Y_{i+1}
 + Z_i Z_{i+1}
-\right) .
+) .
 ```
 
 Here $J_i$ denotes the feature angle assigned to the chain edge $(i,i+1)$:
 
 ```math
-J_i = 2\pi \tanh\left(\frac{\bar{x}_{f(i)}}{3}\right),
+J_i = 2\pi \tanh(\frac{\bar{x}_{f(i)}}{3}),
 \qquad
 \bar{x}_{f(i)} = \frac{x_{f(i)} - \mu_{f(i)}}{w_{f(i)}} .
 ```
@@ -199,24 +184,20 @@ from one Pauli axis to several Pauli axes and can also include cross-axis
 interactions. A compact way to write the full Hamiltonian is:
 
 ```math
-\begin{aligned}
 H_f
 = \sum_i
-\left(
+(
 h_i^{(x)} X_i
 + h_i^{(y)} Y_i
 + h_i^{(z)} Z_i
-\right)
-+ \sum_{i<j}
-\Big[
-&J_{ij}^{(xx)} X_i X_j
+)
++ \sum_{i \lt j}
+[J_{ij}^{(xx)} X_i X_j
 + J_{ij}^{(yy)} Y_i Y_j
-+ J_{ij}^{(zz)} Z_i Z_j \\
-&+ J_{ij}^{(xy)}\left(X_iY_j + Y_iX_j\right) \\
-&+ J_{ij}^{(xz)}\left(X_iZ_j + Z_iX_j\right) \\
-&+ J_{ij}^{(yz)}\left(Y_iZ_j + Z_iY_j\right)
-\Big] .
-\end{aligned}
++ J_{ij}^{(zz)} Z_i Z_j
++ J_{ij}^{(xy)}(X_iY_j + Y_iX_j)
++ J_{ij}^{(xz)}(X_iZ_j + Z_iX_j)
++ J_{ij}^{(yz)}(Y_iZ_j + Z_iY_j)].
 ```
 
 The local fields $h_i^{(x)}$, $h_i^{(y)}$, and $h_i^{(z)}$ are normalized
@@ -252,11 +233,11 @@ a local feature vector:
 ```math
 \mathbf{x}_i
 =
-\left(
+(
 x_i^{(x)},
 x_i^{(y)},
 x_i^{(z)}
-\right),
+).
 ```
 
 and each pair of qubits can carry a full correlation matrix between their
@@ -359,7 +340,7 @@ approximately:
 
 ```math
 n_{\mathrm{blocks}}
-= \left\lceil \frac{n_{\mathrm{features}}}{C} \right\rceil .
+= \lceil \frac{n_{\mathrm{features}}}{C} \rceil .
 ```
 
 The layer mechanism can be mixed with axis encoding:

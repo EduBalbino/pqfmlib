@@ -9,16 +9,17 @@ if __name__ == "__main__":
         data_dir="./data",
         output_root="./results",
         seed=42,
-        ideal=True,
+        ideal=False,
+        simulation=True,
+        fakebackend=False,
         shots=4096,
+
         q_enc=52,
         features_per_qubit=3,
         axes=("x", "y", "z"),
         encoding_mode="multi_axis",
+
         keep_diagonal_terms=True,
         keep_cross_terms=True,
-        measure_cross_observables=False,
-        m=1,
-        tau=1.0,
     )
     print(qfm.run())

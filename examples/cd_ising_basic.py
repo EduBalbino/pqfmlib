@@ -1,4 +1,4 @@
-"""Example: CD-Ising PQFM on the Toxicity dataset."""
+"""Example: CD-Ising PQFM."""
 
 from pqfmlib import CDIsingProjectiveQFM
 
@@ -6,15 +6,14 @@ from pqfmlib import CDIsingProjectiveQFM
 if __name__ == "__main__":
     qfm = CDIsingProjectiveQFM(
         name_file="Toxicity_preprocessed_shuffled",
-        data_dir="./data",
-        output_root="./results",
         seed=42,
-        ideal=True,
+        ideal=False,
+        simulation=False,
+        fakebackend=False,
         shots=4096,
-        q_enc=13,
-        m=1,
-        tau=0.005,
-        k_max=2,
+        ibm_qpu="ibm_kingston",
+        q_enc=156,
         measure_all_zz=False,
+        mps=True,
     )
     print(qfm.run())
