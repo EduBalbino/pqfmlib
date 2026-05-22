@@ -18,14 +18,14 @@ PQFMLib turns a numeric CSV dataset into quantum features through this workflow:
 1. Load a tabular dataset whose last column is the target.
 2. Estimate pairwise feature relations with a normalized mutual-information
    matrix $J$.
-3. Split features into one or more encoding blocks/layers.
+3. Split features into one or more encoding blocks/layers and axis.
 4. Map features to qubits, optionally using QPU connectivity and edge quality.
 5. Build a parametrized Hamiltonian circuit.
 6. Measure one-local and two-local Pauli observables.
 7. Save the resulting projected quantum features to CSV/NPY.
 
 The library supports ideal Aer simulation, MPS simulation, fake-backend
-simulation from IBM backends, resource estimation, and IBM Runtime execution.
+simulation from IBM backends, resource estimation, and real IBM Quantum execution using IBM Runtime.
 
 ## Installation
 
@@ -47,8 +47,21 @@ Datasets are loaded from:
 <data_dir>/<name_file>.csv
 ```
 
-All columns must be numeric and finite. The last column is treated as the target
-$y$; all previous columns are encoded as input features.
+All columns must be numeric and finite, with no missing values. The last column
+is treated as the target $y$; all previous columns are encoded as input
+features.
+
+PQFMLib assumes that the dataset has already been preprocessed. In particular,
+features should be normalized before running the quantum feature maps. A common
+choice is standard-score normalization:
+
+```math
+h_i = \bar{x}_{f(i)},
+\qquad
+\bar{x}_f = \frac{x_f - \mu_f}{w_f},
+```
+
+where $\mu_f$ is the feature mean and $w_f$ is the feature standard deviation.
 
 ## Quick Example
 
@@ -77,26 +90,38 @@ print(result["csv_path"])
 Runnable examples using the `Toxicity_preprocessed_shuffled` dataset are
 available in `examples/`.
 
+## Execution Modes
+
+PQFMLib separates the execution mode from the hardware topology used to build
+the feature map:
+
+- `ideal=True`: runs an ideal Aer simulation. The encoded qubits are treated as
+  fully connected when the map allows it, without enforcing a specific IBM QPU
+  coupling map.
+- `ideal=False` and `simulation=True`: simulates the circuit while using the
+  structure of the selected `ibm_qpu`. For example, a Heron r2 backend uses its
+  heavy-hex topology, so the available two-qubit terms are limited by the QPU
+  coupling map even though execution is simulated. This mode is also useful for
+  MPS simulation with `mps=True`.
+- `ideal=False`, `simulation=True`, and `fakebackend=True`: simulates from the
+  selected IBM backend model through `AerSimulator.from_backend`, including the
+  backend topology and fake-backend behavior.
+- `ideal=False` and `simulation=False`: submits the job to the selected IBM
+  Quantum backend through Runtime.
+
 ## Hamiltonian Maps
 
 ### CD-Ising PQFM
 
-`CDIsingProjectiveQFM` is a counterdiabatic-inspired Ising-glass feature map. In the present implementation, 
-it is extended to support multi-feature encoding per qubit by increasing the circuit depth. 
-Each circuit block, or layer, encodes one feature per qubit, allowing multiple features 
-to be assigned sequentially to the same qubit across different layers.
+`CDIsingProjectiveQFM` is a counterdiabatic-inspired Ising-glass feature map
+based on the approach presented in [1]. In the present implementation, it is extended to support multi-feature
+encoding per qubit by increasing the circuit depth. Each circuit block, or
+layer, encodes one feature per qubit, allowing multiple features to be assigned
+sequentially to the same qubit across different layers.
 
 For each feature block, PQFMLib constructs data-dependent local fields $h_i$ 
 and couplings $J_{ij}$ from the input values and the mutual-information matrix. 
-The local fields are interpreted as normalized feature values:
-
-```math
-h_i = \bar{x}_{f(i)},
-\qquad
-\bar{x}_f = \frac{x_f - \mu_f}{w_f},
-```
-
-where $\mu_f$ is the feature mean and $w_f$ is the feature standard deviation.
+The local fields are interpreted as normalized feature values.
 
 A useful way to view the underlying Ising problem Hamiltonian is:
 
@@ -147,10 +172,10 @@ terms on available edges.
 
 ### Heisenberg PQFM
 
-`HeisenbergProjectiveQFM` follows the original notebook-style Heisenberg map.
-It prepares one random single-qubit unitary per qubit and then applies repeated
-even/odd nearest-neighbor chain layers. Each normalized scalar feature drives an
-isotropic two-qubit interaction:
+`HeisenbergProjectiveQFM` follows the Heisenberg-style projected quantum feature
+maps used in [2,3]. It prepares one random single-qubit unitary per qubit and
+then applies repeated even/odd nearest-neighbor chain layers. Each normalized
+scalar feature drives an isotropic two-qubit interaction:
 
 ```math
 H_{\mathrm{Heisenberg}}(x)
@@ -162,17 +187,13 @@ X_i X_{i+1}
 ) .
 ```
 
-Here $J_i$ denotes the feature angle assigned to the chain edge $(i,i+1)$:
+Here $J_i$ denotes the angle assigned to the chain edge $(i,i+1)$. Using the
+normalized feature convention defined in **Data Format**, the Heisenberg map
+scales each assigned feature as:
 
 ```math
-J_i = 2\pi \tanh(\frac{\bar{x}_{f(i)}}{3}),
-\qquad
-\bar{x}_{f(i)} = \frac{x_{f(i)} - \mu_{f(i)}}{w_{f(i)}} .
+J_i = 2\pi \tanh\left(\frac{\bar{x}_{f(i)}}{3}\right).
 ```
-
-In other words, $\bar{x}$ is the normalized feature, $\mu$ is the mean, and
-$w$ is the standard deviation. This is the same normalized-feature convention
-used by the local fields $h_i$ in CD-Ising and XYZ.
 
 The default observables are one-local $Z$, $X$, and $Y$ for every qubit, with an
 option to include two-local diagonal observables $ZZ$, $XX$, and $YY$.
@@ -418,6 +439,19 @@ Generated `job_meta.json` files can be retrieved with the scripts in
 - `get_job_cd_ising.py`
 - `get_job_heisenberg.py`
 
+## References
+
+[1] Anton Simen et al., "Digitized Counterdiabatic Quantum Feature Extraction,"
+arXiv:2510.13807, 2025. https://arxiv.org/abs/2510.13807
+
+[2] Axel Ciceri et al., "Enhanced fill probability estimates in institutional
+algorithmic bond trading using statistical learning algorithms with quantum
+computers," arXiv:2509.17715, 2025. https://arxiv.org/abs/2509.17715
+
+[3] Andras Ferenczi et al., "Credit Default Prediction with Projected Quantum
+Feature Models and Ensembles," arXiv:2510.01129, 2025.
+https://arxiv.org/abs/2510.01129
+
 ## Repository Structure
 
 ```text
@@ -434,17 +468,3 @@ pqfmlib/
 |-- requirements.txt
 `-- README.md
 ```
-
-## GitHub Notes
-
-The repository is configured to keep generated artifacts out of version
-control. Local datasets, IBM tokens, notebooks, experiment outputs,
-`results/`, `old_general_results/`, `.venv/`, caches, `.qpy` circuits, `.npy`
-arrays, and large local research scripts are ignored by `.gitignore`.
-
-The intended public package surface is:
-
-- `pqfmlib/`: reusable library code.
-- `examples/`: simple scripts showing how to run each map on Toxicity data.
-- `scripts/`: optional IBM Runtime retrieval helpers.
-- `pyproject.toml`, `requirements.txt`, and `README.md`.
