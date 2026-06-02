@@ -179,7 +179,7 @@ scalar feature drives an isotropic two-qubit interaction:
 
 ```math
 H_{\mathrm{Heisenberg}}(x)
-= \sum_{(i,i+1)} J_i
+= \sum_{i} J_i
 (
 X_i X_{i+1}
 + Y_i Y_{i+1}
