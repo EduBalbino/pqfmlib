@@ -17,7 +17,7 @@ venv/
 env/
 .env
 .env.*
-config.py
+/config.py
 *.token
 
 # OS and editor files

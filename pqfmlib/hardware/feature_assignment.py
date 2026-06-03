@@ -1,7 +1,4 @@
 """Genetic algorithms for hardware-aware feature assignment.
-
-The public functions intentionally keep the ``GA`` prefix because this module is
-meant to preserve the naming convention used in the original experimental code.
 """
 
 from __future__ import annotations

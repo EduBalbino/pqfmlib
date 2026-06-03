@@ -1,16 +1,4 @@
-"""Notebook-based Heisenberg Projective Quantum Feature Map.
-
-This module implements the Heisenberg map from ``Heisenberg_map.ipynb``:
-
-- one random single-qubit unitary per qubit;
-- repeated even/odd nearest-neighbor chain layers;
-- each encoded scalar feature drives RZZ, RXX, and RYY on one chain edge;
-- feature angles are scaled as ``2*pi*tanh(x/3)``;
-- observables are one-local Z, X, Y for every qubit.
-
-The implementation intentionally keeps the notebook semantics, while exposing it
-through the unified PQFMLib runner interface.
-"""
+"""Heisenberg Projective Quantum Feature Map."""
 
 from __future__ import annotations
 
