@@ -1,0 +1,3 @@
+[submodule "qimed-quantum-v5"]
+	path = qimed-quantum-v5
+	url = https://github.com/EduBalbino/qimed-quantum-v5.git
